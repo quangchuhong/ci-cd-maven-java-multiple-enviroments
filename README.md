@@ -199,5 +199,162 @@ env:
 ---
 ## 6. Jenkins CI Pipeline (Jenkinsfile)
 ### 6.1. Mục tiêu pipeline
+- Trigger từ GitLab webhook trên các branch: develop, staging, main.
+- Các bước:
+    1. Checkout code
+    2. Build & test Maven
+    3. SonarQube analysis (+ Quality Gate)
+    4. Build Docker image
+    5. Scan Trivy
+    6. Push image lên ECR
+    7. Update GitOps repo (values.yaml đúng môi trường)
+    8. (Option) Manual approval trước khi update prod
+       
+### 6.2. Jenkinsfile mẫu (rút gọn, cần chỉnh lại ID/URL cụ thể)
+```text
+pipeline {
+    agent any
 
+    environment {
+        APP_NAME        = "my-maven-app"
+
+        // ECR repo, ví dụ: 123456789012.dkr.ecr.ap-southeast-1.amazonaws.com/my-maven-app
+        ECR_REPOSITORY  = "<your-account-id>.dkr.ecr.<region>.amazonaws.com/my-maven-app"
+
+        // GitOps repo chứa các values.yaml theo môi trường
+        GITOPS_REPO_URL = "git@gitlab.com:yourgroup/gitops-repo.git"
+
+        SONARQUBE_ENV   = "sonarqube"   // tên server trong Jenkins > Configure System
+        AWS_CREDENTIALS = "aws-creds"   // ID Jenkins credential kiểu AWS
+        GIT_CREDENTIALS = "gitlab-ssh"  // ID Jenkins credential để push gitops-repo
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+                script {
+                    GIT_SHORT_SHA = sh(
+                        script: 'git rev-parse --short HEAD',
+                        returnStdout: true
+                    ).trim()
+                }
+            }
+        }
+
+        stage('Build & Test (Maven)') {
+            steps {
+                sh 'mvn clean verify'
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv(SONARQUBE_ENV) {
+                    sh """
+                       mvn sonar:sonar \
+                         -Dsonar.projectKey=${APP_NAME} \
+                         -Dsonar.projectName='${APP_NAME}'
+                    """
+                }
+            }
+        }
+
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    def envPrefix
+                    if (env.BRANCH_NAME == "develop") {
+                        envPrefix = "dev"
+                    } else if (env.BRANCH_NAME == "staging") {
+                        envPrefix = "stg"
+                    } else if (env.BRANCH_NAME == "main") {
+                        envPrefix = "prod"
+                    } else {
+                        envPrefix = "dev"
+                    }
+
+                    IMAGE_TAG = "${envPrefix}-${GIT_SHORT_SHA}"
+
+                    sh """
+                       docker build -t ${ECR_REPOSITORY}:${IMAGE_TAG} .
+                    """
+                }
+            }
+        }
+
+        stage('Trivy Scan') {
+            steps {
+                sh """
+                   trivy image --exit-code 1 --severity HIGH,CRITICAL ${ECR_REPOSITORY}:${IMAGE_TAG}
+                """
+            }
+        }
+
+        stage('Push to ECR') {
+            steps {
+                withCredentials([aws(credentialsId: AWS_CREDENTIALS, region: '<region>')]) {
+                    sh """
+                       aws ecr get-login-password --region <region> \
+                         | docker login --username AWS --password-stdin ${ECR_REPOSITORY%/*}
+
+                       docker push ${ECR_REPOSITORY}:${IMAGE_TAG}
+                    """
+                }
+            }
+        }
+
+        stage('Update GitOps Repo') {
+            steps {
+                script {
+                    def envPath
+                    if (env.BRANCH_NAME == "develop") {
+                        envPath = "test"
+                    } else if (env.BRANCH_NAME == "staging") {
+                        envPath = "staging"
+                    } else if (env.BRANCH_NAME == "main") {
+                        envPath = "prod"
+                    } else {
+                        envPath = "test"
+                    }
+
+                    dir('gitops-repo') {
+                        git url: GITOPS_REPO_URL,
+                            branch: 'main',
+                            credentialsId: GIT_CREDENTIALS
+
+                        // Cập nhật image.tag trong values.yaml (cần có yq trên agent)
+                        sh """
+                           yq e '.image.tag = "${IMAGE_TAG}"' -i ${envPath}/values.yaml
+                        """
+
+                        sh """
+                           git config user.email "jenkins-bot@example.com"
+                           git config user.name  "Jenkins Bot"
+                           git commit -am "Update ${APP_NAME} image tag to ${IMAGE_TAG} for ${envPath}" || echo "No changes"
+                           git push origin main
+                        """
+                    }
+                }
+            }
+        }
+    }
+}
+
+```
+```
+Lưu ý:
+
+    - Cần cài yq trên Jenkins agent để chỉnh giá trị YAML.
+    - env.BRANCH_NAME phụ thuộc bạn dùng Freestyle hay Multibranch Pipeline.
+    - Có thể thêm stage manual approval trước khi update prod.
+```
 
