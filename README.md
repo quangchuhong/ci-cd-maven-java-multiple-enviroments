@@ -390,6 +390,7 @@ Tương tự cho:
 
     - my-maven-app-staging (path: staging, namespace: my-maven-app-staging)
     - my-maven-app-prod (path: prod, namespace: my-maven-app-prod)
+
 Với prod, có thể:
 
     - Để syncPolicy.automated = off (manual sync),
