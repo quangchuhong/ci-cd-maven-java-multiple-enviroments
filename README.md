@@ -85,3 +85,8 @@ app-repo/
             ├── service.yaml
             └── ingress.yaml (nếu dùng)
 ```
+**Branch đề xuất:
+**
+    - develop → build & deploy tới test
+    - staging → promote/build & deploy tới staging
+    - main → promote/build & deploy tới prod
