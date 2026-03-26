@@ -90,3 +90,21 @@ app-repo/
     - develop → build & deploy tới test
     - release/* → promote/build & deploy tới staging
     - main → promote/build & deploy tới prod
+
+### 4.2. Repo GitOps (gitops-repo)
+
+Repo riêng dùng cho Argo CD:
+```text
+gitops-repo/
+├── test/
+│   └── values.yaml
+├── staging/
+│   └── values.yaml
+└── prod/
+    └── values.yaml
+
+```
+- Mỗi values.yaml override ít nhất:
+    - image.repository
+    - image.tag
+    - cấu hình env, replica, resources theo môi trường.
