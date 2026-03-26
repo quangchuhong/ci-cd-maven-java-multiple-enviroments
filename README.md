@@ -420,25 +420,25 @@ Với prod, có thể:
 
 ## 9. Bảo mật & best practices (tóm tắt)
 
-**- Credentials:**
+**Credentials:**
 
     - Lưu AWS credential, GitLab SSH key, Sonar token, v.v trong Jenkins Credentials.
     
-**- ECR & Image:**
+**ECR & Image:**
 
     - Dùng tag bất biến (SHA), tránh latest trong prod.
 
-**- Trivy:**
+**Trivy:**
 
 - Có thể:
     - test: cảnh báo
     - staging/prod: fail nếu HIGH/CRITICAL.
 
-**- SonarQube Quality Gate:**
+**SonarQube Quality Gate:**
 
     - Bắt buộc pass trước khi build image cho staging/prod.
     
-**- Argo CD:**
+**Argo CD:**
 
     - Gán quyền chỉ đọc cho Dev, quyền sync/rollback cho DevOps/ops.
 
