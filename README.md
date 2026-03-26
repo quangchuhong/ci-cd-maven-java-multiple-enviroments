@@ -441,4 +441,11 @@ Với prod, có thể:
 **Argo CD:**
 
     - Gán quyền chỉ đọc cho Dev, quyền sync/rollback cho DevOps/ops.
+---
+## 10. Tài liệu bổ sung nên có trong repo
 
+    - docs/ci-cd-architecture.md (file này).
+    
+    - docs/runbook-deploy.md: cách trigger deploy, rollback.
+    
+    - docs/troubleshooting.md: các lỗi thường gặp (Jenkins, Argo CD, K8s) và cách xử lý.
