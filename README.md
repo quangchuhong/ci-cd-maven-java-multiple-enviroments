@@ -357,4 +357,41 @@ Lưu ý:
     - env.BRANCH_NAME phụ thuộc bạn dùng Freestyle hay Multibranch Pipeline.
     - Có thể thêm stage manual approval trước khi update prod.
 ```
+---
+## 7. Argo CD (CD – GitOps)
+### 7.1. Ứng dụng test
 
+```text
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: my-maven-app-test
+spec:
+  project: default
+  source:
+    repoURL: git@gitlab.com:yourgroup/gitops-repo.git
+    targetRevision: main
+    path: test
+    helm:
+      # tuỳ thiết kế: dùng chart local hoặc chart trong repo riêng
+      valueFiles:
+        - values.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: my-maven-app-test
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+
+```
+```
+Tương tự cho:
+
+    - my-maven-app-staging (path: staging, namespace: my-maven-app-staging)
+    - my-maven-app-prod (path: prod, namespace: my-maven-app-prod)
+Với prod, có thể:
+
+    - Để syncPolicy.automated = off (manual sync),
+    - Hoặc vẫn auto-sync nhưng pipeline Jenkins có step “approval” trước khi update GitOps repo.
+```
