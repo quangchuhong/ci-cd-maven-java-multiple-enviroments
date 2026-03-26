@@ -168,4 +168,36 @@ env:
     value: "test"
 
 ```
+gitops-repo/staging/values.yaml:
+
+```text
+image:
+  repository: <your-ecr-repo-url>/my-maven-app
+  tag: "stg-<sha>"   # Jenkins cập nhật
+
+replicaCount: 2
+
+env:
+  - name: SPRING_PROFILES_ACTIVE
+    value: "staging"
+
+```
+gitops-repo/prod/values.yaml:
+
+```text
+image:
+  repository: <your-ecr-repo-url>/my-maven-app
+  tag: "prod-<sha-or-version>"
+
+replicaCount: 3
+
+env:
+  - name: SPRING_PROFILES_ACTIVE
+    value: "prod"
+
+```
+---
+## 6. Jenkins CI Pipeline (Jenkinsfile)
+### 6.1. Mục tiêu pipeline
+
 
