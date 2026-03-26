@@ -27,3 +27,43 @@ Chi tiết:
     - Cập nhật GitOps repo (Helm values: image tag).
 4. Argo CD theo dõi GitOps repo:
 Thấy thay đổi values.yaml → sync → deploy version mới lên EKS (theo từng môi trường).
+---
+## 3. Kiến trúc tổng quan
+```text
+┌──────────┐      ┌───────────┐      ┌────────┐
+│ Developer│  git │  GitLab   │hook  │ Jenkins│
+└────┬─────┘      └────┬──────┘────►└────┬───┘
+     │                 │                CI│
+     │                 │                  │
+     │         ┌───────▼───────┐         │
+     │         │ app-repo      │         │
+     │         │ (code,        │         │
+     │         │  Dockerfile,  │         │
+     │         │  Jenkinsfile, │         │
+     │         │  Helm chart)  │         │
+     │         └───────────────┘         │
+     │                                    │
+     │                                    │
+     │     ┌──────────────┐       ┌───────▼────────┐
+     │     │ SonarQube    │       │ Trivy          │
+     │     └──────────────┘       └───────┬────────┘
+     │                                     │
+     │                            ┌────────▼─────────┐
+     │                            │ AWS ECR (images) │
+     │                            └────────┬─────────┘
+     │                                     │
+     │                           ┌─────────▼──────────┐
+     │                           │ gitops-repo        │
+     │                           │ (test/staging/prod │
+     │                           │  values.yaml)      │
+     │                           └─────────┬──────────┘
+     │                                     │
+     │                           ┌─────────▼─────────┐
+     │                           │  Argo CD          │
+     │                           └─────────┬─────────┘
+     │                                     │
+     │   test namespace          staging   │   prod
+     │  ┌──────────────┐       ┌──────────▼──────┐
+     └─►   EKS cluster │  ...  │   EKS cluster   │ (hoặc chung cluster,
+        └──────────────┘       └─────────────────┘  khác namespace)
+```
