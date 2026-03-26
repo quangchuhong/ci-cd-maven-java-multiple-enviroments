@@ -67,3 +67,21 @@ Thấy thay đổi values.yaml → sync → deploy version mới lên EKS (theo 
      └─►   EKS cluster │  ...  │   EKS cluster   │ (hoặc chung cluster,
         └──────────────┘       └─────────────────┘  khác namespace)
 ```
+---
+## 4. Thiết kế repository & nhánh
+### 4.1. Repo ứng dụng (app-repo)
+```text
+app-repo/
+├── src/
+├── pom.xml
+├── Dockerfile
+├── Jenkinsfile
+└── helm/
+    └── my-maven-app/
+        ├── Chart.yaml
+        ├── values.yaml          # values chung / mặc định
+        └── templates/
+            ├── deployment.yaml
+            ├── service.yaml
+            └── ingress.yaml (nếu dùng)
+```
