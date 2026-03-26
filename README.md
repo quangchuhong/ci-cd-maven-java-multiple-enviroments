@@ -396,3 +396,47 @@ Với prod, có thể:
     - Để syncPolicy.automated = off (manual sync),
     - Hoặc vẫn auto-sync nhưng pipeline Jenkins có step “approval” trước khi update GitOps repo.
 ```
+---
+
+## 8. Promotion giữa 3 môi trường
+
+**Nguyên tắc**: Build 1 lần, deploy nhiều nơi (không rebuild lại cho staging/prod).
+
+1. Dev push vào develop:
+
+    - Jenkins build → image tag: dev-<sha>
+    - Cập nhật test/values.yaml → image.tag = dev-<sha>
+    - Argo CD deploy bản này lên test.
+
+2. Khi test OK:
+
+    - Merge/Cherry-pick sang branch staging nhưng vẫn dùng lại <sha> đó:
+        - Jenkins pipeline cho staging không bắt buộc phải build lại,
+        - chỉ update staging/values.yaml với tag = stg-<sha> hoặc tái sử dụng dev-<sha>.
+          
+3. Khi staging OK:
+   - Tương tự, merge sang main và deploy prod với cùng artifact (image SHA) đã chạy ổn ở staging.
+---
+
+## 9. Bảo mật & best practices (tóm tắt)
+
+**- Credentials:**
+    - Lưu AWS credential, GitLab SSH key, Sonar token, v.v trong Jenkins Credentials.
+    
+**- ECR & Image:**
+    - Dùng tag bất biến (SHA), tránh latest trong prod.
+
+**- Trivy:**
+
+- Có thể:
+    - test: cảnh báo
+    - staging/prod: fail nếu HIGH/CRITICAL.
+
+**- SonarQube Quality Gate:**
+
+    - Bắt buộc pass trước khi build image cho staging/prod.
+    
+**- Argo CD:**
+
+    - Gán quyền chỉ đọc cho Dev, quyền sync/rollback cho DevOps/ops.
+
