@@ -88,5 +88,5 @@ app-repo/
 **Branch đề xuất**: 
 
     - develop → build & deploy tới test
-    - staging → promote/build & deploy tới staging
+    - release/* → promote/build & deploy tới staging
     - main → promote/build & deploy tới prod
