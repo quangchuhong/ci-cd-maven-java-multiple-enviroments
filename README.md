@@ -108,3 +108,64 @@ gitops-repo/
     - image.repository
     - image.tag
     - cấu hình env, replica, resources theo môi trường.
+
+## 5. Cấu trúc Helm & values
+### 5.1. values.yaml chung trong app-repo
+
+`app-repo/helm/my-maven-app/values.yaml`:
+
+```text
+image:
+  repository: <your-ecr-repo-url>/my-maven-app
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+replicaCount: 1
+
+env: []
+resources: {}
+
+```
+deployment.yaml trích đoạn:
+```text
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "my-maven-app.fullname" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "my-maven-app.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "my-maven-app.name" . }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            {{- range .Values.env }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+
+```
+### 5.2. values theo môi trường trong gitops-repo
+
+gitops-repo/test/values.yaml:
+```text
+image:
+  repository: <your-ecr-repo-url>/my-maven-app
+  tag: "dev-<sha>"   # Jenkins sẽ cập nhật
+
+replicaCount: 1
+
+env:
+  - name: SPRING_PROFILES_ACTIVE
+    value: "test"
+
+```
+
