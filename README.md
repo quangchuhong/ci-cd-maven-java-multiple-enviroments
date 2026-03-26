@@ -421,9 +421,11 @@ Với prod, có thể:
 ## 9. Bảo mật & best practices (tóm tắt)
 
 **- Credentials:**
+
     - Lưu AWS credential, GitLab SSH key, Sonar token, v.v trong Jenkins Credentials.
     
 **- ECR & Image:**
+
     - Dùng tag bất biến (SHA), tránh latest trong prod.
 
 **- Trivy:**
